@@ -88,6 +88,13 @@ public class LogPanel extends JPanel implements BallEventListener {
                 }
             }
             
+            // Add special formatting for physics parameter changes
+            if (event.getEventType() == BallEvent.Type.GRAVITY_DIRECTION_CHANGED ||
+                event.getEventType() == BallEvent.Type.SPRING_CONSTANT_CHANGED ||
+                event.getEventType() == BallEvent.Type.GRAVITY_TOGGLED) {
+                message = "⚙️ " + message;
+            }
+            
             addLogMessage(message);
         }
     }
