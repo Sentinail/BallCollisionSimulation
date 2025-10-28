@@ -10,6 +10,7 @@ package com.mycompany.ballcollisionsimulation;
 import javax.swing.*;
 import javax.swing.WindowConstants;
 import java.awt.*;
+import java.io.*;
 
 /**
  * Main application class for ball collision simulation
@@ -51,7 +52,7 @@ public class BallCollisionSimulation extends JFrame {
     }
     
     /**
-     * Set up the menu bar with empty menus
+     * Set up the menu bar with File and About Us menus
      */
     private void setupMenuBar() {
         JMenuBar menuBar = new JMenuBar();
@@ -60,23 +61,37 @@ public class BallCollisionSimulation extends JFrame {
         JMenu fileMenu = new JMenu("File");
         fileMenu.setMnemonic('F');
         
-        // Simulation Menu
-        JMenu simulationMenu = new JMenu("Simulation");
-        simulationMenu.setMnemonic('S');
+        JMenuItem saveItem = new JMenuItem("Save Simulation...");
+        saveItem.setMnemonic('S');
+        saveItem.setAccelerator(KeyStroke.getKeyStroke("control S"));
+        saveItem.addActionListener(e -> saveSimulation());
         
-        // View Menu
-        JMenu viewMenu = new JMenu("View");
-        viewMenu.setMnemonic('V');
+        JMenuItem loadItem = new JMenuItem("Load Simulation...");
+        loadItem.setMnemonic('L');
+        loadItem.setAccelerator(KeyStroke.getKeyStroke("control O"));
+        loadItem.addActionListener(e -> loadSimulation());
         
-        // Help Menu
-        JMenu helpMenu = new JMenu("Help");
-        helpMenu.setMnemonic('H');
+        JMenuItem exitItem = new JMenuItem("Exit");
+        exitItem.setMnemonic('X');
+        exitItem.addActionListener(e -> System.exit(0));
+        
+        fileMenu.add(saveItem);
+        fileMenu.add(loadItem);
+        fileMenu.addSeparator();
+        fileMenu.add(exitItem);
+        
+        // About Us Menu
+        JMenu aboutMenu = new JMenu("About Us");
+        aboutMenu.setMnemonic('A');
+        
+        JMenuItem aboutItem = new JMenuItem("Development Team");
+        aboutItem.addActionListener(e -> showAboutDialog());
+        
+        aboutMenu.add(aboutItem);
         
         // Add menus to menu bar
         menuBar.add(fileMenu);
-        menuBar.add(simulationMenu);
-        menuBar.add(viewMenu);
-        menuBar.add(helpMenu);
+        menuBar.add(aboutMenu);
         
         // Set the menu bar
         setJMenuBar(menuBar);
@@ -152,6 +167,141 @@ public class BallCollisionSimulation extends JFrame {
             gamePanel.repaint();
         });
         gameTimer.start();
+    }
+    
+    /**
+     * Save the current simulation state to a file
+     */
+    private void saveSimulation() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Simulation");
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Simulation Files (*.sim)", "sim"));
+        
+        int result = fileChooser.showSaveDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            
+            // Ensure .sim extension
+            if (!file.getName().toLowerCase().endsWith(".sim")) {
+                file = new File(file.getAbsolutePath() + ".sim");
+            }
+            
+            try (PrintWriter writer = new PrintWriter(new FileWriter(file))) {
+                // Save gravity settings
+                writer.println("GRAVITY_ENABLED:" + gameState.isGravityEnabled());
+                writer.println("GRAVITY_X:" + gameState.getGravityX());
+                writer.println("GRAVITY_Y:" + gameState.getGravityY());
+                writer.println("BALL_COUNT:" + gameState.getBalls().size());
+                
+                // Save each ball's state
+                for (Ball ball : gameState.getBalls()) {
+                    writer.println(String.format("BALL:%.2f,%.2f,%.2f,%.2f,%d,%d,%d,%d",
+                        ball.getX(), ball.getY(),
+                        ball.getVelocityX(), ball.getVelocityY(),
+                        ball.getRadius(),
+                        ball.getColor().getRed(),
+                        ball.getColor().getGreen(),
+                        ball.getColor().getBlue()
+                    ));
+                }
+                
+                JOptionPane.showMessageDialog(this,
+                    "Simulation saved successfully!\nBalls saved: " + gameState.getBalls().size(),
+                    "Save Complete",
+                    JOptionPane.INFORMATION_MESSAGE);
+                    
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this,
+                    "Error saving simulation: " + e.getMessage(),
+                    "Save Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    /**
+     * Load a simulation state from a file
+     */
+    private void loadSimulation() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Load Simulation");
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Simulation Files (*.sim)", "sim"));
+        
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                // Clear current simulation
+                gameState.clearAllBalls();
+                
+                String line;
+                int ballsLoaded = 0;
+                
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("GRAVITY_ENABLED:")) {
+                        boolean enabled = Boolean.parseBoolean(line.substring(16));
+                        if (enabled != gameState.isGravityEnabled()) {
+                            gameState.toggleGravity();
+                        }
+                    } else if (line.startsWith("GRAVITY_X:")) {
+                        double gx = Double.parseDouble(line.substring(10));
+                        double gy = gameState.getGravityY();
+                        gameState.setGravityDirection(gx, gy);
+                    } else if (line.startsWith("GRAVITY_Y:")) {
+                        double gy = Double.parseDouble(line.substring(10));
+                        double gx = gameState.getGravityX();
+                        gameState.setGravityDirection(gx, gy);
+                    } else if (line.startsWith("BALL:")) {
+                        String[] parts = line.substring(5).split(",");
+                        if (parts.length == 8) {
+                            double x = Double.parseDouble(parts[0]);
+                            double y = Double.parseDouble(parts[1]);
+                            double vx = Double.parseDouble(parts[2]);
+                            double vy = Double.parseDouble(parts[3]);
+                            int radius = Integer.parseInt(parts[4]);
+                            int r = Integer.parseInt(parts[5]);
+                            int g = Integer.parseInt(parts[6]);
+                            int b = Integer.parseInt(parts[7]);
+                            
+                            Ball ball = new Ball(x, y, vx, vy, radius, new Color(r, g, b));
+                            gameState.getBalls().add(ball);
+                            ballsLoaded++;
+                        }
+                    }
+                }
+                
+                JOptionPane.showMessageDialog(this,
+                    "Simulation loaded successfully!\nBalls loaded: " + ballsLoaded,
+                    "Load Complete",
+                    JOptionPane.INFORMATION_MESSAGE);
+                    
+            } catch (IOException | NumberFormatException e) {
+                JOptionPane.showMessageDialog(this,
+                    "Error loading simulation: " + e.getMessage(),
+                    "Load Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    /**
+     * Show the About Us dialog with developer information
+     */
+    private void showAboutDialog() {
+        String aboutMessage = "Developers:\n\n" +
+                "Wilson G. Ponseca\n" +
+                "Bianca Mackenzie C. Liong\n" +
+                "Pio Daniel E. Cordoves\n" +
+                "Alejandro D. Alvarez\n" +
+                "Louis Jefferson V. Samosino";
+        
+        JOptionPane.showMessageDialog(
+                this,
+                aboutMessage,
+                "About Us",
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
     
     public static void main(String[] args) {

@@ -34,6 +34,20 @@ public class Ball {
     }
     
     /**
+     * Constructor for loading saved balls with specific properties
+     */
+    public Ball(double x, double y, double vx, double vy, int radius, Color color) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.radius = radius;
+        this.color = color;
+        this.mass = Math.PI * radius * radius;
+        this.isDragged = false;
+    }
+    
+    /**
      * Update ball position and apply physics
      */
     public void update(int panelWidth, int panelHeight, boolean gravityEnabled, double gravityX, double gravityY, double deltaTime) {
@@ -223,5 +237,9 @@ public class Ball {
     
     public double getVelocityY() {
         return vy;
+    }
+    
+    public Color getColor() {
+        return color;
     }
 }
