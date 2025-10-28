@@ -21,6 +21,7 @@ public class GameState {
     private Ball draggedBall;
     private double mouseX;
     private double mouseY;
+    private double springConstant;
     
     public GameState() {
         balls = new ArrayList<>();
@@ -29,6 +30,7 @@ public class GameState {
         gravityX = 0;
         gravityY = 300; // Default downward gravity (pixels/second^2)
         draggedBall = null;
+        springConstant = 50000.0; // Default spring constant for Hooke's Law
     }
     
     // Observer pattern methods
@@ -112,7 +114,7 @@ public class GameState {
         // Update ball physics
         for (Ball ball : balls) {
             if (ball == draggedBall) {
-                ball.applyDragForce(mouseX, mouseY, deltaTime);
+                ball.applyDragForce(mouseX, mouseY, springConstant, deltaTime);
             } else {
                 ball.update(panelWidth, panelHeight, gravityEnabled, gravityX, gravityY, deltaTime);
             }
@@ -158,5 +160,13 @@ public class GameState {
     
     public Ball getDraggedBall() {
         return draggedBall;
+    }
+    
+    public double getSpringConstant() {
+        return springConstant;
+    }
+    
+    public void setSpringConstant(double springConstant) {
+        this.springConstant = springConstant;
     }
 }

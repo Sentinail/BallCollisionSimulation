@@ -21,7 +21,6 @@ public class Ball {
     private boolean isDragged;
     private double dragOffsetX, dragOffsetY;
     private static final Random random = new Random();
-    private static final double SPRING_CONSTANT = 50000.0; // Spring constant for Hooke's Law
     
     public Ball(double x, double y) {
         this.x = x;
@@ -52,11 +51,11 @@ public class Ball {
             // Bounce off walls with energy conservation
             if (x - radius <= 0 || x + radius >= panelWidth) {
                 vx = -vx * 0.8; // Energy loss on bounce
-                x = Math.max(radius, Math.min(panelWidth - radius, x));
+                x = Math.max(radius, Math.min((double)panelWidth - radius, x));
             }
             if (y - radius <= 0 || y + radius >= panelHeight) {
                 vy = -vy * 0.8; // Energy loss on bounce
-                y = Math.max(radius, Math.min(panelHeight - radius, y));
+                y = Math.max(radius, Math.min((double)panelHeight - radius, y));
             }
         }
     }
@@ -64,7 +63,7 @@ public class Ball {
     /**
      * Apply Hooke's Law for dragging effect
      */
-    public void applyDragForce(double mouseX, double mouseY, double deltaTime) {
+    public void applyDragForce(double mouseX, double mouseY, double springConstant, double deltaTime) {
         if (isDragged) {
             // Calculate spring force using Hooke's Law: F = -k * displacement
             double targetX = mouseX - dragOffsetX;
@@ -73,8 +72,8 @@ public class Ball {
             double displacementX = x - targetX;
             double displacementY = y - targetY;
             
-            double forceX = -SPRING_CONSTANT * displacementX;
-            double forceY = -SPRING_CONSTANT * displacementY;
+            double forceX = -springConstant * displacementX;
+            double forceY = -springConstant * displacementY;
             
             // Apply force to velocity: F = ma, so a = F/m, v += a * dt
             vx += (forceX / mass) * deltaTime;
