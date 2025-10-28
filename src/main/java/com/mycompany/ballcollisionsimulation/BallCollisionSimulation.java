@@ -204,12 +204,26 @@ public class BallCollisionSimulation extends JFrame {
     }
     
     /**
+     * Get the default saves directory, creating it if it doesn't exist
+     */
+    private File getSavesDirectory() {
+        File savesDir = new File("src/main/assets/saves");
+        if (!savesDir.exists()) {
+            savesDir.mkdirs();
+        }
+        return savesDir;
+    }
+    
+    /**
      * Save the current simulation state to a file
      */
     private void saveSimulation() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save Simulation");
         fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Simulation Files (*.sim)", "sim"));
+        
+        // Set default directory to src/main/assets/saves
+        fileChooser.setCurrentDirectory(getSavesDirectory());
         
         int result = fileChooser.showSaveDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
@@ -260,6 +274,9 @@ public class BallCollisionSimulation extends JFrame {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Load Simulation");
         fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Simulation Files (*.sim)", "sim"));
+        
+        // Set default directory to src/main/assets/saves
+        fileChooser.setCurrentDirectory(getSavesDirectory());
         
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
@@ -332,6 +349,10 @@ public class BallCollisionSimulation extends JFrame {
                 "Mouse Controls:\n" +
                 "  Click & drag - Move balls with spring force\n" +
                 "  Double-click - Add ball at mouse position\n\n" +
+                "File Operations:\n" +
+                "  Ctrl+S - Save simulation\n" +
+                "  Ctrl+O - Load simulation\n" +
+                "  Save files are stored in: src/main/assets/saves/\n\n" +
                 "Tips:\n" +
                 "  • Balls collide elastically with each other and walls\n" +
                 "  • Gravity affects all balls when enabled\n" +
