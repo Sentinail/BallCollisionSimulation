@@ -52,7 +52,7 @@ public class BallCollisionSimulation extends JFrame {
     }
     
     /**
-     * Set up the menu bar with File and About Us menus
+     * Set up the menu bar with File, View, Help, and About Us menus
      */
     private void setupMenuBar() {
         JMenuBar menuBar = new JMenuBar();
@@ -80,6 +80,38 @@ public class BallCollisionSimulation extends JFrame {
         fileMenu.addSeparator();
         fileMenu.add(exitItem);
         
+        // View Menu
+        JMenu viewMenu = new JMenu("View");
+        viewMenu.setMnemonic('V');
+        
+        JCheckBoxMenuItem toggleLogItem = new JCheckBoxMenuItem("Show Log Panel", true);
+        JCheckBoxMenuItem toggleControlItem = new JCheckBoxMenuItem("Show Control Panel", true);
+        
+        toggleLogItem.addActionListener(e -> {
+            logPanel.setVisible(toggleLogItem.isSelected());
+            revalidate();
+        });
+        
+        toggleControlItem.addActionListener(e -> {
+            controlPanel.setVisible(toggleControlItem.isSelected());
+            revalidate();
+        });
+        
+        viewMenu.add(toggleLogItem);
+        viewMenu.add(toggleControlItem);
+        
+        // Help Menu
+        JMenu helpMenu = new JMenu("Help");
+        helpMenu.setMnemonic('H');
+        
+        JMenuItem controlsItem = new JMenuItem("Keyboard & Mouse Controls");
+        controlsItem.addActionListener(e -> showHelpDialog());
+        helpMenu.add(controlsItem);
+        
+        JMenuItem physicsItem = new JMenuItem("About Physics Simulation");
+        physicsItem.addActionListener(e -> showPhysicsInfoDialog());
+        helpMenu.add(physicsItem);
+        
         // About Us Menu
         JMenu aboutMenu = new JMenu("About Us");
         aboutMenu.setMnemonic('A');
@@ -91,6 +123,8 @@ public class BallCollisionSimulation extends JFrame {
         
         // Add menus to menu bar
         menuBar.add(fileMenu);
+        menuBar.add(viewMenu);
+        menuBar.add(helpMenu);
         menuBar.add(aboutMenu);
         
         // Set the menu bar
@@ -283,6 +317,41 @@ public class BallCollisionSimulation extends JFrame {
                     JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+    
+    /**
+     * Show the help dialog with keyboard and mouse controls
+     */
+    private void showHelpDialog() {
+        String helpText =
+                "Keyboard Controls:\n" +
+                "  A - Add a ball\n" +
+                "  C - Clear all balls\n" +
+                "  G - Toggle gravity on/off\n" +
+                "  1–5 - Add multiple balls\n\n" +
+                "Mouse Controls:\n" +
+                "  Click & drag - Move balls with spring force\n" +
+                "  Double-click - Add ball at mouse position\n\n" +
+                "Tips:\n" +
+                "  • Balls collide elastically with each other and walls\n" +
+                "  • Gravity affects all balls when enabled\n" +
+                "  • You can save/load the simulation anytime!";
+        JOptionPane.showMessageDialog(this, helpText, "Help - Controls", JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    /**
+     * Show the physics information dialog
+     */
+    private void showPhysicsInfoDialog() {
+        String physicsText =
+                "Physics Simulation Details:\n\n" +
+                "• Elastic collisions conserve energy and momentum\n" +
+                "• Dragging uses Hooke's Law (F = -k * x)\n" +
+                "• Gravity vector: (0, 300) when enabled\n" +
+                "• Wall collisions reduce velocity slightly\n" +
+                "• Frame update rate: ~60 FPS\n\n" +
+                "This simulation uses MVC and the Observer design pattern.";
+        JOptionPane.showMessageDialog(this, physicsText, "Help - Physics Simulation", JOptionPane.INFORMATION_MESSAGE);
     }
     
     /**
