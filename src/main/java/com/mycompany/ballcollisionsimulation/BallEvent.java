@@ -13,7 +13,9 @@ import java.util.EventObject;
  */
 public class BallEvent extends EventObject {
     public enum Type {
-        BALL_CREATED, BALL_COLLISION, BALL_DRAGGED, BALL_RELEASED, GRAVITY_TOGGLED, BALLS_CLEARED
+        BALL_CREATED, BALL_COLLISION, BALL_DRAGGED, BALL_RELEASED, 
+        GRAVITY_TOGGLED, GRAVITY_DIRECTION_CHANGED, 
+        SPRING_CONSTANT_CHANGED, BALLS_CLEARED
     }
     
     private Type eventType;
