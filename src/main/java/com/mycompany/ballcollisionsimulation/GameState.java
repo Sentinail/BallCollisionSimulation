@@ -71,10 +71,8 @@ public class GameState {
     public void setGravityDirection(double gx, double gy) {
         this.gravityX = gx;
         this.gravityY = gy;
-        if (gravityEnabled) {
-            fireBallEvent(BallEvent.Type.GRAVITY_TOGGLED, 
-                String.format("Gravity direction changed to (%.1f, %.1f)", gx, gy));
-        }
+        fireBallEvent(BallEvent.Type.GRAVITY_DIRECTION_CHANGED, 
+            String.format("Gravity direction changed to (%.1f, %.1f)", gx, gy));
     }
     
     // Mouse interaction methods
@@ -167,6 +165,9 @@ public class GameState {
     }
     
     public void setSpringConstant(double springConstant) {
+        double oldConstant = this.springConstant;
         this.springConstant = springConstant;
+        fireBallEvent(BallEvent.Type.SPRING_CONSTANT_CHANGED, 
+            String.format("Spring constant changed from %.1f to %.1f", oldConstant, springConstant));
     }
 }
