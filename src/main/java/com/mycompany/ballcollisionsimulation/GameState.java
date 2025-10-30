@@ -112,7 +112,7 @@ public class GameState {
         // Update ball physics
         for (Ball ball : balls) {
             if (ball == draggedBall) {
-                ball.applyDragForce(mouseX, mouseY, springConstant, deltaTime);
+                ball.applyDragForce(mouseX, mouseY, springConstant, deltaTime, panelWidth, panelHeight);
             } else {
                 ball.update(panelWidth, panelHeight, gravityEnabled, gravityX, gravityY, deltaTime);
             }

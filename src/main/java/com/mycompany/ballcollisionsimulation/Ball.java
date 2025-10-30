@@ -77,7 +77,7 @@ public class Ball {
     /**
      * Apply Hooke's Law for dragging effect
      */
-    public void applyDragForce(double mouseX, double mouseY, double springConstant, double deltaTime) {
+    public void applyDragForce(double mouseX, double mouseY, double springConstant, double deltaTime, int panelWidth, int panelHeight) {
         if (isDragged) {
             // Calculate spring force using Hooke's Law: F = -k * displacement
             double targetX = mouseX - dragOffsetX;
@@ -100,6 +100,32 @@ public class Ball {
             // Apply damping to prevent oscillation
             vx *= 0.9;
             vy *= 0.9;
+
+            // Boundary Constraints
+            double minX = radius;
+            double maxX = panelWidth - radius;
+            double minY = radius;
+            double maxY = panelHeight - radius;
+
+            // Boundary rebound (yo-yo effect)
+            if(x <= minX || x >= maxX){
+                vx *= -0.5; // Reverse velocity and apply damping for rebound
+
+                // Prevent from going out of bounds
+                if(x <= minX) x = minX;
+                if(x >= maxX) x = maxX;
+
+            }
+            
+            if(y <= minY || y>= maxY){
+                vy *= -0.5; // Reverse velocity and apply damping for rebound
+
+                // Prevent from going out of bounds
+                if(y <= minY) y = minY;
+                if(y >= maxY) y = maxY;
+
+
+            }
         }
     }
     
