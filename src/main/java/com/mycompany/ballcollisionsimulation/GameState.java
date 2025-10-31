@@ -22,6 +22,7 @@ public class GameState {
     private double mouseX;
     private double mouseY;
     private double springConstant;
+    private ControlPanel controlPanel; // NEW: Reference for dynamic radius
     
     public GameState() {
         balls = new ArrayList<>();
@@ -31,6 +32,12 @@ public class GameState {
         gravityY = 300; // Default downward gravity (pixels/second^2)
         draggedBall = null;
         springConstant = 50000.0; // Default spring constant for Hooke's Law
+        controlPanel = null; // NEW: Initially null
+    }
+    
+    // NEW: Setter for control panel
+    public void setControlPanel(ControlPanel controlPanel) {
+        this.controlPanel = controlPanel;
     }
     
     // Observer pattern methods
@@ -45,13 +52,33 @@ public class GameState {
         }
     }
     
-    // Ball management
+    // MODIFIED: Ball management - uses radius from control panel
     public void addBall() {
-        Ball ball = new Ball(200 + Math.random() * 300, 100 + Math.random() * 200);
+        // NEW: Get radius from control panel if available, otherwise use default
+        int radius = controlPanel != null ? 
+            controlPanel.getCurrentRadius() : 
+            BallResizer.DEFAULT_RADIUS;
+        
+        Ball ball = new Ball(200 + Math.random() * 300, 100 + Math.random() * 200, radius);
         balls.add(ball);
         fireBallEvent(BallEvent.Type.BALL_CREATED, 
-            String.format("Ball created at (%.0f, %.0f). Total balls: %d. Mass: %.1f", 
-                ball.getX(), ball.getY(), balls.size(), ball.getMass()));
+            String.format("Ball created at (%.0f, %.0f) with radius %d. Total balls: %d. Mass: %.1f", 
+                ball.getX(), ball.getY(), radius, balls.size(), ball.getMass()));
+    }
+    
+    /**
+     * NEW: Add a ball at a specific position (for mouse double-click)
+     */
+    public void addBallAt(double x, double y) {
+        int radius = controlPanel != null ? 
+            controlPanel.getCurrentRadius() : 
+            BallResizer.DEFAULT_RADIUS;
+
+        Ball ball = new Ball(x, y, radius);
+        balls.add(ball);
+        fireBallEvent(BallEvent.Type.BALL_CREATED, 
+            String.format("Ball created at (%.0f, %.0f) with radius %d. Total balls: %d. Mass: %.1f", 
+                ball.getX(), ball.getY(), radius, balls.size(), ball.getMass()));
     }
     
     public void clearAllBalls() {
@@ -169,5 +196,11 @@ public class GameState {
         this.springConstant = springConstant;
         fireBallEvent(BallEvent.Type.SPRING_CONSTANT_CHANGED, 
             String.format("Spring constant changed from %.1f to %.1f", oldConstant, springConstant));
+    }
+
+    public void setGravity(double gravityY) {
+        this.gravityY = gravityY;
+        fireBallEvent(BallEvent.Type.GRAVITY_DIRECTION_CHANGED, 
+            String.format("Gravity set to %.1f pixels/second²", gravityY));
     }
 }

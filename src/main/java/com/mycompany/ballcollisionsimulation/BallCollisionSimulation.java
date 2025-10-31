@@ -47,6 +47,9 @@ public class BallCollisionSimulation extends JFrame {
         logPanel = new LogPanel();
         controlPanel = new ControlPanel();
         
+        // Connect control panel to game state
+        gameState.setControlPanel(controlPanel);
+        
         // Set up observer pattern - LogPanel observes GameState
         gameState.addBallEventListener(logPanel);
     }

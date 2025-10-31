@@ -22,14 +22,14 @@ public class Ball {
     private double dragOffsetX, dragOffsetY;
     private static final Random random = new Random();
     
-    public Ball(double x, double y) {
+    public Ball(double x, double y, int radius) {
         this.x = x;
         this.y = y;
-        this.radius = 10 + random.nextInt(20); // Random radius 10-30
-        this.vx = (random.nextDouble() - 0.5) * 200; // Random velocity -100 to 100 pixels/second
+        this.radius = radius;
+        this.vx = (random.nextDouble() - 0.5) * 200;
         this.vy = (random.nextDouble() - 0.5) * 200;
         this.color = new Color(random.nextInt(256), random.nextInt(256), random.nextInt(256));
-        this.mass = Math.PI * radius * radius; // mass = area of circle
+        this.mass = Math.PI * radius * radius;
         this.isDragged = false;
     }
     

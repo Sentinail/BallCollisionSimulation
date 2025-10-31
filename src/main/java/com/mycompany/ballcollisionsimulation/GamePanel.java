@@ -2,7 +2,6 @@
  * Game Panel - View component for collision simulation
  * Handles rendering of balls and mouse interactions
  */
-
 package com.mycompany.ballcollisionsimulation;
 
 import javax.swing.*;
@@ -50,8 +49,8 @@ public class GamePanel extends JPanel {
                         }
                     }
                     if (!hitBall) {
-                        Ball newBall = new Ball(e.getX(), e.getY());
-                        gameState.getBalls().add(newBall);
+                        // Create ball at mouse position using addBallAt method
+                        gameState.addBallAt(e.getX(), e.getY());
                     }
                 }
             }
