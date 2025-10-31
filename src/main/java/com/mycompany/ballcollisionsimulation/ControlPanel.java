@@ -14,6 +14,7 @@ import java.awt.*;
  */
 public class ControlPanel extends JPanel {
     GameState gameState;
+    private int previousIndex = 0;
     
     public ControlPanel(GameState gameState) {
         this.gameState = gameState;
@@ -49,37 +50,45 @@ public class ControlPanel extends JPanel {
         // Gravity Selector (JComboBox)
         String[] gravityOptions = {"Default","Earth Gravity", "Moon Gravity", "Mars Gravity", "Jupiter Gravity", "Custom Gravity"};
         JComboBox<String> gravitySelector = new JComboBox<>(gravityOptions);
+        gravitySelector.setFocusable(false);
 
         gravitySelector.addActionListener(e -> {
+            if(!gravitySelector.isPopupVisible()){
+                return;
+            }
             String selected = (String) gravitySelector.getSelectedItem();
                 switch(selected) {
                 case "Default":
-                    gameState.setGravity(300.0);
+                    updateGravity(300.0, gravitySelector);
                     break;
                 case "Earth Gravity":
-                    gameState.setGravity(980.0);
+                    updateGravity(980.0, gravitySelector);
                     break;
                 case "Moon Gravity":
-                    gameState.setGravity(165.0);
+                    updateGravity(165.0, gravitySelector);
                     break;
                 case "Mars Gravity":
-                    gameState.setGravity(380.0);
+                    updateGravity(380.0, gravitySelector);
                     break;
                 case "Jupiter Gravity":
-                    gameState.setGravity(2430.0);
+                    updateGravity(2430.0, gravitySelector);
                     break;
                 case "Custom Gravity":
                     String input = JOptionPane.showInputDialog(null,
                                     "Enter custom gravity (pixels/s²):",
                                     "Custom Gravity",
                                     JOptionPane.PLAIN_MESSAGE);
-                     try {
+                     try{
                         if (input != null) {
-                        double customValue = Double.parseDouble(input);
-                        gameState.setGravity(customValue);
+                            double customValue = Double.parseDouble(input);
+                            updateGravity(customValue, gravitySelector);
+                        } else{
+                            gravitySelector.setSelectedIndex(previousIndex);
                         }
-                    } catch (NumberFormatException ex) {
+                    } catch(NumberFormatException ex) {
                         JOptionPane.showMessageDialog(null, "Invalid number entered", "Error", JOptionPane.ERROR_MESSAGE);
+                        // Restore Previous Selection
+                        gravitySelector.setSelectedIndex(previousIndex);
                     }   
                     break;
 
@@ -122,4 +131,10 @@ public class ControlPanel extends JPanel {
         spacerPanel.setBackground(Color.LIGHT_GRAY);
         add(spacerPanel, BorderLayout.SOUTH);
     }
+
+    private void updateGravity(double value, JComboBox<String> comboBox) {
+        gameState.setGravity(value);
+        previousIndex = comboBox.getSelectedIndex();
+    }
+
 }
