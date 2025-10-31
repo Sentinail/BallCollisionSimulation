@@ -269,4 +269,10 @@ public class ControlPanel extends JPanel {
     public int getCurrentRadius() {
         return ballResizer.getCurrentRadius();
     }
+
+    private void updateGravity(double value, JComboBox<String> comboBox) {
+        gameState.setGravity(value);
+        previousIndex = comboBox.getSelectedIndex();
+    }
+
 }

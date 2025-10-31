@@ -45,7 +45,7 @@ public class BallCollisionSimulation extends JFrame {
         // Initialize panels (View)
         gamePanel = new GamePanel(gameState);
         logPanel = new LogPanel();
-        controlPanel = new ControlPanel();
+        controlPanel = new ControlPanel(gameState);
         
         // Connect control panel to game state
         gameState.setControlPanel(controlPanel);
