@@ -21,19 +21,14 @@ public class ControlPanel extends JPanel {
     private JComboBox<String> gravitySelector;
     private int previousIndex = 0;
     
-    public ControlPanel() {
+    public ControlPanel(GameState gameState) {
+        this.gameState = gameState;
         this.ballResizer = new BallResizer();
         setupLayout();
         setupComponents();
-    }
-    
-    /**
-     * Set the game state (called after construction)
-     */
-    public void setGameState(GameState gameState) {
-        this.gameState = gameState;
         setupGravityListener();
     }
+    
     
     /**
      * Set up the layout and appearance of the control panel
@@ -193,7 +188,7 @@ public class ControlPanel extends JPanel {
                     gravitySelector.setEnabled(false);
                 } else {
                     gravitySelector.setEnabled(true);
-                    gravitySelector.setSelectedIndex(0);  // Default to "Default" when enabled
+                    gravitySelector.setSelectedIndex(previousIndex); // Previous Index or Gravity Mode selected will return rather than "Default"
                 }
             }
         });
@@ -251,7 +246,7 @@ public class ControlPanel extends JPanel {
      */
     private void updateGravity(double value) {
         if (gameState != null) {
-            gameState.setGravity(value);
+            gameState.setGravityDirection(0, value);
             previousIndex = gravitySelector.getSelectedIndex();
         }
     }
@@ -268,11 +263,6 @@ public class ControlPanel extends JPanel {
      */
     public int getCurrentRadius() {
         return ballResizer.getCurrentRadius();
-    }
-
-    private void updateGravity(double value, JComboBox<String> comboBox) {
-        gameState.setGravity(value);
-        previousIndex = comboBox.getSelectedIndex();
     }
 
 }

@@ -198,9 +198,4 @@ public class GameState {
             String.format("Spring constant changed from %.1f to %.1f", oldConstant, springConstant));
     }
 
-    public void setGravity(double gravityY) {
-        this.gravityY = gravityY;
-        fireBallEvent(BallEvent.Type.GRAVITY_DIRECTION_CHANGED, 
-            String.format("Gravity set to %.1f pixels/second²", gravityY));
-    }
 }
