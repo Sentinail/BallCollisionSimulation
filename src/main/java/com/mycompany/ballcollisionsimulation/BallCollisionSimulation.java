@@ -89,6 +89,8 @@ public class BallCollisionSimulation extends JFrame {
         
         JCheckBoxMenuItem toggleLogItem = new JCheckBoxMenuItem("Show Log Panel", true);
         JCheckBoxMenuItem toggleControlItem = new JCheckBoxMenuItem("Show Control Panel", true);
+        JCheckBoxMenuItem toggleGridItem = new JCheckBoxMenuItem("Show Grid", true);
+        JCheckBoxMenuItem toggleInstructionsItem = new JCheckBoxMenuItem("Show Instructions", true);
         
         toggleLogItem.addActionListener(e -> {
             logPanel.setVisible(toggleLogItem.isSelected());
@@ -100,8 +102,15 @@ public class BallCollisionSimulation extends JFrame {
             revalidate();
         });
         
+        toggleGridItem.addActionListener(e -> gamePanel.setGridVisible(toggleGridItem.isSelected()));
+        
+        toggleInstructionsItem.addActionListener(e -> gamePanel.setInstructionsVisible(toggleInstructionsItem.isSelected()));
+        
         viewMenu.add(toggleLogItem);
         viewMenu.add(toggleControlItem);
+        viewMenu.addSeparator();
+        viewMenu.add(toggleGridItem);
+        viewMenu.add(toggleInstructionsItem);
         
         // Help Menu
         JMenu helpMenu = new JMenu("Help");
