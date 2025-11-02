@@ -36,7 +36,7 @@ public class BallCollisionSimulation extends JFrame {
     private void initializeApplication() {
         setTitle("Ball Collision Simulation - CP3 Final Project");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        setSize(1200, 700);
+        setSize(1500, 1000);
         setLocationRelativeTo(null);
         
         // Initialize game state (Model)
@@ -242,6 +242,8 @@ public class BallCollisionSimulation extends JFrame {
                 writer.println("GRAVITY_ENABLED:" + gameState.isGravityEnabled());
                 writer.println("GRAVITY_X:" + gameState.getGravityX());
                 writer.println("GRAVITY_Y:" + gameState.getGravityY());
+                writer.println("SPRING_CONSTANT: " + gameState.getSpringConstant());
+                writer.println("NEW_BALL_RADIUS: " + controlPanel.getCurrentRadius());
                 writer.println("BALL_COUNT:" + gameState.getBalls().size());
                 
                 // Save each ball's state
@@ -255,9 +257,16 @@ public class BallCollisionSimulation extends JFrame {
                         ball.getColor().getBlue()
                     ));
                 }
+
+                writer.println("OBSTACLE_COUNT:" + gameState.getObstacles().size());
+                for (Obstacle obstacle : gameState.getObstacles()) {
+                    writer.println(String.format("OBSTACLE:RECT,%.2f,%.2f,%.2f,%.2f",
+                        obstacle.getX(), obstacle.getY(), obstacle.getWidth(), obstacle.getHeight()));
+                }
                 
                 JOptionPane.showMessageDialog(this,
-                    "Simulation saved successfully!\nBalls saved: " + gameState.getBalls().size(),
+                    String.format("Simulation saved successfully!\nBalls saved: %d\nObstacles saved: %d",
+                        gameState.getBalls().size(), gameState.getObstacles().size()),
                     "Save Complete",
                     JOptionPane.INFORMATION_MESSAGE);
                     
@@ -288,9 +297,11 @@ public class BallCollisionSimulation extends JFrame {
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 // Clear current simulation
                 gameState.clearAllBalls();
+                gameState.clearObstacles();
                 
                 String line;
                 int ballsLoaded = 0;
+                int obstaclesLoaded = 0;
                 
                 while ((line = reader.readLine()) != null) {
                     if (line.startsWith("GRAVITY_ENABLED:")) {
@@ -306,6 +317,28 @@ public class BallCollisionSimulation extends JFrame {
                         double gy = Double.parseDouble(line.substring(10));
                         double gx = gameState.getGravityX();
                         gameState.setGravityDirection(gx, gy);
+                    } else if (line.startsWith("SPRING_CONSTANT:")) {
+                        String value = line.substring("SPRING_CONSTANT:".length()).trim();
+                        try {
+                            double springConstant = Double.parseDouble(value);
+                            if (springConstant != gameState.getSpringConstant()) {
+                                gameState.setSpringConstant(springConstant);
+                            }
+                        } catch (NumberFormatException ignored) {
+                            // Ignore malformed value to maintain backward compatibility
+                        }
+                    } else if (line.startsWith("NEW_BALL_RADIUS:")) {
+                        String value = line.substring("NEW_BALL_RADIUS:".length()).trim();
+                        try {
+                            int radius = Integer.parseInt(value);
+                            if (controlPanel != null) {
+                                controlPanel.setCurrentRadius(radius);
+                            }
+                        } catch (NumberFormatException ignored) {
+                            // Ignore malformed value for backward compatibility
+                        }
+                    } else if (line.startsWith("OBSTACLE_COUNT:")) {
+                        // No action needed; obstacles are read individually
                     } else if (line.startsWith("BALL:")) {
                         String[] parts = line.substring(5).split(",");
                         if (parts.length == 8) {
@@ -322,11 +355,25 @@ public class BallCollisionSimulation extends JFrame {
                             gameState.getBalls().add(ball);
                             ballsLoaded++;
                         }
+                    } else if (line.startsWith("OBSTACLE:")) {
+                        String[] parts = line.substring("OBSTACLE:".length()).split(",");
+                        if (parts.length >= 5) {
+                            String shape = parts[0].trim();
+                            if ("RECT".equalsIgnoreCase(shape)) {
+                                double x = Double.parseDouble(parts[1]);
+                                double y = Double.parseDouble(parts[2]);
+                                double width = Double.parseDouble(parts[3]);
+                                double height = Double.parseDouble(parts[4]);
+                                gameState.addObstacleRaw(x, y, width, height);
+                                obstaclesLoaded++;
+                            }
+                        }
                     }
                 }
                 
                 JOptionPane.showMessageDialog(this,
-                    "Simulation loaded successfully!\nBalls loaded: " + ballsLoaded,
+                    String.format("Simulation loaded successfully!\nBalls loaded: %d\nObstacles loaded: %d",
+                        ballsLoaded, obstaclesLoaded),
                     "Load Complete",
                     JOptionPane.INFORMATION_MESSAGE);
                     
@@ -352,6 +399,10 @@ public class BallCollisionSimulation extends JFrame {
                 "Mouse Controls:\n" +
                 "  Click & drag - Move balls with spring force\n" +
                 "  Double-click - Add ball at mouse position\n\n" +
+                "Obstacle Editing:\n" +
+                "  Toggle 'Edit Obstacles' in Control Panel\n" +
+                "  Left-click canvas to add or drag obstacles\n" +
+                "  Right-click obstacle to remove it\n\n" +
                 "File Operations:\n" +
                 "  Ctrl+S - Save simulation\n" +
                 "  Ctrl+O - Load simulation\n" +
@@ -372,6 +423,7 @@ public class BallCollisionSimulation extends JFrame {
                 "• Elastic collisions conserve energy and momentum\n" +
                 "• Dragging uses Hooke's Law (F = -k * x)\n" +
                 "• Gravity vector: (0, 300) when enabled\n" +
+                "• Rectangular obstacles collide elastically with balls\n" +
                 "• Wall collisions reduce velocity slightly\n" +
                 "• Frame update rate: ~60 FPS\n\n" +
                 "This simulation uses MVC and the Observer design pattern.";

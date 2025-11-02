@@ -23,6 +23,11 @@ public class GameState {
     private double mouseY;
     private double springConstant;
     private ControlPanel controlPanel; // NEW: Reference for dynamic radius
+    private List<Obstacle> obstacles;
+    private Obstacle draggedObstacle;
+    private double obstacleOffsetX;
+    private double obstacleOffsetY;
+    private boolean obstacleEditMode;
     
     public GameState() {
         balls = new ArrayList<>();
@@ -33,11 +38,31 @@ public class GameState {
         draggedBall = null;
         springConstant = 50000.0; // Default spring constant for Hooke's Law
         controlPanel = null; // NEW: Initially null
+        obstacles = new ArrayList<>();
+        draggedObstacle = null;
+        obstacleOffsetX = 0;
+        obstacleOffsetY = 0;
+        obstacleEditMode = false;
     }
     
     // NEW: Setter for control panel
     public void setControlPanel(ControlPanel controlPanel) {
         this.controlPanel = controlPanel;
+    }
+
+    public boolean isObstacleEditMode() {
+        return obstacleEditMode;
+    }
+
+    public void setObstacleEditMode(boolean enabled) {
+        obstacleEditMode = enabled;
+        if (!enabled && draggedObstacle != null) {
+            draggedObstacle.setSelected(false);
+            draggedObstacle = null;
+        }
+        if (enabled) {
+            draggedBall = null;
+        }
     }
     
     // Observer pattern methods
@@ -79,6 +104,56 @@ public class GameState {
         fireBallEvent(BallEvent.Type.BALL_CREATED, 
             String.format("Ball created at (%.0f, %.0f) with radius %d. Total balls: %d. Mass: %.1f", 
                 ball.getX(), ball.getY(), radius, balls.size(), ball.getMass()));
+    }
+
+    public List<Obstacle> getObstacles() {
+        return obstacles;
+    }
+
+    public void addObstacleAt(double centerX, double centerY) {
+        double width = controlPanel != null ? controlPanel.getObstacleWidth() : Obstacle.DEFAULT_WIDTH;
+        double height = controlPanel != null ? controlPanel.getObstacleHeight() : Obstacle.DEFAULT_HEIGHT;
+        double topLeftX = centerX - width / 2.0;
+        double topLeftY = centerY - height / 2.0;
+        Obstacle obstacle = new Obstacle(topLeftX, topLeftY, width, height);
+        obstacles.add(obstacle);
+        fireBallEvent(BallEvent.Type.OBSTACLE_CREATED,
+            String.format("Obstacle created at (%.0f, %.0f) size %.0fx%.0f. Total obstacles: %d",
+                topLeftX, topLeftY, width, height, obstacles.size()));
+    }
+
+    public void addObstacleRaw(double x, double y, double width, double height) {
+        Obstacle obstacle = new Obstacle(x, y, width, height);
+        obstacles.add(obstacle);
+        fireBallEvent(BallEvent.Type.OBSTACLE_CREATED,
+            String.format("Obstacle loaded at (%.0f, %.0f) size %.0fx%.0f. Total obstacles: %d",
+                obstacle.getX(), obstacle.getY(), obstacle.getWidth(), obstacle.getHeight(), obstacles.size()));
+    }
+
+    public void removeObstacleAt(double x, double y) {
+        for (int i = obstacles.size() - 1; i >= 0; i--) {
+            Obstacle obstacle = obstacles.get(i);
+            if (obstacle.contains(x, y)) {
+                obstacles.remove(i);
+                if (obstacle == draggedObstacle) {
+                    draggedObstacle = null;
+                }
+                fireBallEvent(BallEvent.Type.OBSTACLE_REMOVED,
+                    String.format("Obstacle removed from (%.0f, %.0f). Remaining obstacles: %d",
+                        obstacle.getX(), obstacle.getY(), obstacles.size()));
+                break;
+            }
+        }
+    }
+
+    public void clearObstacles() {
+        int count = obstacles.size();
+        obstacles.clear();
+        draggedObstacle = null;
+        if (count > 0) {
+            fireBallEvent(BallEvent.Type.OBSTACLES_CLEARED,
+                String.format("All %d obstacles cleared", count));
+        }
     }
     
     public void clearAllBalls() {
@@ -133,6 +208,38 @@ public class GameState {
             draggedBall = null;
         }
     }
+
+    public boolean handleObstacleMousePressed(double x, double y) {
+        for (Obstacle obstacle : obstacles) {
+            if (obstacle.contains(x, y)) {
+                draggedObstacle = obstacle;
+                obstacleOffsetX = x - obstacle.getX();
+                obstacleOffsetY = y - obstacle.getY();
+                obstacle.setSelected(true);
+                return true;
+            }
+        }
+        draggedObstacle = null;
+        return false;
+    }
+
+    public void handleObstacleMouseDragged(double x, double y) {
+        if (draggedObstacle != null) {
+            double newX = x - obstacleOffsetX;
+            double newY = y - obstacleOffsetY;
+            draggedObstacle.setPosition(newX, newY);
+        }
+    }
+
+    public void handleObstacleMouseReleased() {
+        if (draggedObstacle != null) {
+            draggedObstacle.setSelected(false);
+            fireBallEvent(BallEvent.Type.OBSTACLE_MOVED,
+                String.format("Obstacle moved to (%.0f, %.0f)",
+                    draggedObstacle.getX(), draggedObstacle.getY()));
+            draggedObstacle = null;
+        }
+    }
     
     // Physics update
     public void updateBalls(int panelWidth, int panelHeight, double deltaTime) {
@@ -142,6 +249,14 @@ public class GameState {
                 ball.applyDragForce(mouseX, mouseY, springConstant, deltaTime, panelWidth, panelHeight);
             } else {
                 ball.update(panelWidth, panelHeight, gravityEnabled, gravityX, gravityY, deltaTime);
+            }
+
+            for (Obstacle obstacle : obstacles) {
+                if (resolveBallObstacleCollision(ball, obstacle)) {
+                    fireBallEvent(BallEvent.Type.BALL_OBSTACLE_COLLISION,
+                        String.format("Ball at (%.0f, %.0f) collided with obstacle at (%.0f, %.0f)",
+                            ball.getX(), ball.getY(), obstacle.getX(), obstacle.getY()));
+                }
             }
         }
         
@@ -196,6 +311,65 @@ public class GameState {
         this.springConstant = springConstant;
         fireBallEvent(BallEvent.Type.SPRING_CONSTANT_CHANGED, 
             String.format("Spring constant changed from %.1f to %.1f", oldConstant, springConstant));
+    }
+
+    private boolean resolveBallObstacleCollision(Ball ball, Obstacle obstacle) {
+        double closestX = clamp(ball.getX(), obstacle.getX(), obstacle.getX() + obstacle.getWidth());
+        double closestY = clamp(ball.getY(), obstacle.getY(), obstacle.getY() + obstacle.getHeight());
+        double dx = ball.getX() - closestX;
+        double dy = ball.getY() - closestY;
+        double distanceSquared = dx * dx + dy * dy;
+        double radius = ball.getRadius();
+
+        if (distanceSquared > radius * radius) {
+            return false;
+        }
+
+        double distance = Math.sqrt(distanceSquared);
+        double nx;
+        double ny;
+
+        if (distance == 0) {
+            double centerX = obstacle.getX() + obstacle.getWidth() / 2.0;
+            double centerY = obstacle.getY() + obstacle.getHeight() / 2.0;
+            double diffX = ball.getX() - centerX;
+            double diffY = ball.getY() - centerY;
+            if (Math.abs(diffX) < Math.abs(diffY)) {
+                nx = diffX >= 0 ? 1 : -1;
+                ny = 0;
+            } else {
+                nx = 0;
+                ny = diffY >= 0 ? 1 : -1;
+            }
+            distance = 0.0001;
+        } else {
+            nx = dx / distance;
+            ny = dy / distance;
+        }
+
+        double penetration = radius - distance;
+        ball.moveBy(nx * penetration, ny * penetration);
+
+        double dot = ball.getVelocityX() * nx + ball.getVelocityY() * ny;
+        if (dot < 0) {
+            double restitution = 0.9;
+            double newVx = ball.getVelocityX() - (1 + restitution) * dot * nx;
+            double newVy = ball.getVelocityY() - (1 + restitution) * dot * ny;
+            ball.setVelocity(newVx, newVy);
+            return true;
+        }
+
+        return false;
+    }
+
+    private double clamp(double value, double min, double max) {
+        if (value < min) {
+            return min;
+        }
+        if (value > max) {
+            return max;
+        }
+        return value;
     }
 
 }

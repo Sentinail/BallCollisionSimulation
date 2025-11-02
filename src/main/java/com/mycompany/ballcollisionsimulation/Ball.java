@@ -268,4 +268,19 @@ public class Ball {
     public Color getColor() {
         return color;
     }
+
+    public void setPosition(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public void moveBy(double dx, double dy) {
+        this.x += dx;
+        this.y += dy;
+    }
+
+    public void setVelocity(double vx, double vy) {
+        this.vx = vx;
+        this.vy = vy;
+    }
 }

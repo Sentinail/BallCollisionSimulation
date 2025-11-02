@@ -29,18 +29,37 @@ public class GamePanel extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                gameState.handleMousePressed(e.getX(), e.getY());
+                if (gameState.isObstacleEditMode()) {
+                    if (SwingUtilities.isRightMouseButton(e)) {
+                        gameState.removeObstacleAt(e.getX(), e.getY());
+                    } else if (SwingUtilities.isLeftMouseButton(e)) {
+                        boolean grabbed = gameState.handleObstacleMousePressed(e.getX(), e.getY());
+                        if (!grabbed) {
+                            gameState.addObstacleAt(e.getX(), e.getY());
+                            gameState.handleObstacleMousePressed(e.getX(), e.getY());
+                        }
+                    }
+                } else if (SwingUtilities.isLeftMouseButton(e)) {
+                    gameState.handleMousePressed(e.getX(), e.getY());
+                }
             }
             
             @Override
             public void mouseReleased(MouseEvent e) {
-                gameState.handleMouseReleased();
+                if (gameState.isObstacleEditMode()) {
+                    gameState.handleObstacleMouseReleased();
+                } else if (SwingUtilities.isLeftMouseButton(e)) {
+                    gameState.handleMouseReleased();
+                }
             }
             
             @Override
             public void mouseClicked(MouseEvent e) {
-                // Add ball on double click if not clicking on existing ball
-                if (e.getClickCount() == 2) {
+                if (gameState.isObstacleEditMode()) {
+                    return;
+                }
+
+                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2) {
                     boolean hitBall = false;
                     for (Ball ball : gameState.getBalls()) {
                         if (ball.contains(e.getX(), e.getY())) {
@@ -49,7 +68,6 @@ public class GamePanel extends JPanel {
                         }
                     }
                     if (!hitBall) {
-                        // Create ball at mouse position using addBallAt method
                         gameState.addBallAt(e.getX(), e.getY());
                     }
                 }
@@ -60,7 +78,11 @@ public class GamePanel extends JPanel {
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
-                gameState.handleMouseDragged(e.getX(), e.getY());
+                if (gameState.isObstacleEditMode()) {
+                    gameState.handleObstacleMouseDragged(e.getX(), e.getY());
+                } else {
+                    gameState.handleMouseDragged(e.getX(), e.getY());
+                }
             }
         });
     }
@@ -70,6 +92,10 @@ public class GamePanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        for (Obstacle obstacle : gameState.getObstacles()) {
+            obstacle.paint(g2d);
+        }
         
         // Paint all balls
         for (Ball ball : gameState.getBalls()) {
@@ -86,6 +112,9 @@ public class GamePanel extends JPanel {
             gameState.isGravityEnabled() ? "ON" : "OFF",
             gameState.getGravityX(),
             gameState.getGravityY()), 10, 50);
+        g2d.drawString(String.format("Obstacles: %d | Mode: %s (left-click add/move, right-click remove)",
+            gameState.getObstacles().size(),
+            gameState.isObstacleEditMode() ? "EDIT" : "VIEW"), 10, 65);
         
         // Draw dragged ball connection line
         if (gameState.getDraggedBall() != null) {

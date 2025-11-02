@@ -20,6 +20,10 @@ public class ControlPanel extends JPanel {
     private JLabel sizeValueLabel;
     private JComboBox<String> gravitySelector;
     private int previousIndex = 0;
+    private JSpinner obstacleWidthSpinner;
+    private JSpinner obstacleHeightSpinner;
+    private JToggleButton obstacleModeToggle;
+    private JLabel obstacleCountLabel;
     
     public ControlPanel(GameState gameState) {
         this.gameState = gameState;
@@ -27,6 +31,7 @@ public class ControlPanel extends JPanel {
         setupLayout();
         setupComponents();
         setupGravityListener();
+        setupObstacleListener();
     }
     
     
@@ -156,6 +161,79 @@ public class ControlPanel extends JPanel {
         
         mainPanel.add(sizePanel);
         
+        // Add separator
+        mainPanel.add(Box.createVerticalStrut(10));
+        JSeparator obstacleSeparator = new JSeparator();
+        obstacleSeparator.setMaximumSize(new Dimension(180, 2));
+        mainPanel.add(obstacleSeparator);
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        // ========== OBSTACLE CONTROL SECTION ==========
+        JPanel obstaclePanel = new JPanel();
+        obstaclePanel.setLayout(new BoxLayout(obstaclePanel, BoxLayout.Y_AXIS));
+        obstaclePanel.setBackground(Color.LIGHT_GRAY);
+        obstaclePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(10, 10, 10, 10),
+            BorderFactory.createTitledBorder("Obstacles")
+        ));
+
+        obstacleModeToggle = new JToggleButton("Edit Obstacles");
+        obstacleModeToggle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        obstacleModeToggle.addActionListener(e -> {
+            if (gameState != null) {
+                boolean enabled = obstacleModeToggle.isSelected();
+                gameState.setObstacleEditMode(enabled);
+                obstacleModeToggle.setText(enabled ? "Editing Obstacles" : "Edit Obstacles");
+            }
+        });
+        obstaclePanel.add(obstacleModeToggle);
+
+        obstaclePanel.add(Box.createVerticalStrut(10));
+
+        JLabel widthLabel = new JLabel("Width (px):");
+        widthLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        obstaclePanel.add(widthLabel);
+
+        obstacleWidthSpinner = new JSpinner(new SpinnerNumberModel((int) Obstacle.DEFAULT_WIDTH, 20, 600, 10));
+        obstacleWidthSpinner.setMaximumSize(new Dimension(140, 25));
+        obstaclePanel.add(obstacleWidthSpinner);
+
+        obstaclePanel.add(Box.createVerticalStrut(10));
+
+        JLabel heightLabel = new JLabel("Height (px):");
+        heightLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        obstaclePanel.add(heightLabel);
+
+        obstacleHeightSpinner = new JSpinner(new SpinnerNumberModel((int) Obstacle.DEFAULT_HEIGHT, 20, 400, 10));
+        obstacleHeightSpinner.setMaximumSize(new Dimension(140, 25));
+        obstaclePanel.add(obstacleHeightSpinner);
+
+        obstaclePanel.add(Box.createVerticalStrut(15));
+
+        JButton clearObstaclesButton = new JButton("Clear Obstacles");
+        clearObstaclesButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        clearObstaclesButton.addActionListener(e -> {
+            if (gameState != null) {
+                gameState.clearObstacles();
+            }
+        });
+        obstaclePanel.add(clearObstaclesButton);
+
+        obstaclePanel.add(Box.createVerticalStrut(10));
+
+        obstacleCountLabel = new JLabel("Obstacles: 0");
+        obstacleCountLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        obstaclePanel.add(obstacleCountLabel);
+
+        JLabel obstacleTipLabel = new JLabel("<html><center>Left-click: add/move<br>Right-click: remove</center></html>");
+        obstacleTipLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        obstacleTipLabel.setFont(new Font("Arial", Font.ITALIC, 10));
+        obstacleTipLabel.setForeground(Color.DARK_GRAY);
+        obstaclePanel.add(Box.createVerticalStrut(8));
+        obstaclePanel.add(obstacleTipLabel);
+
+        mainPanel.add(obstaclePanel);
+
         // Add info label at bottom
         mainPanel.add(Box.createVerticalGlue());
         
@@ -192,6 +270,32 @@ public class ControlPanel extends JPanel {
                 }
             }
         });
+    }
+
+    private void setupObstacleListener() {
+        if (gameState == null) {
+            return;
+        }
+
+        gameState.addBallEventListener(event -> {
+            switch (event.getEventType()) {
+                case OBSTACLE_CREATED:
+                case OBSTACLE_REMOVED:
+                case OBSTACLE_MOVED:
+                case OBSTACLES_CLEARED:
+                    updateObstacleCount();
+                    break;
+                default:
+                    break;
+            }
+        });
+        updateObstacleCount();
+    }
+
+    private void updateObstacleCount() {
+        if (obstacleCountLabel != null && gameState != null) {
+            obstacleCountLabel.setText(String.format("Obstacles: %d", gameState.getObstacles().size()));
+        }
     }
     
     /**
@@ -263,6 +367,34 @@ public class ControlPanel extends JPanel {
      */
     public int getCurrentRadius() {
         return ballResizer.getCurrentRadius();
+    }
+
+    /**
+     * Update the current radius control to match a loaded simulation.
+     */
+    public void setCurrentRadius(int radius) {
+        int clamped = Math.max(ballResizer.getMinRadius(), Math.min(ballResizer.getMaxRadius(), radius));
+        ballResizer.setRadius(clamped);
+        if (sizeSlider != null) {
+            sizeSlider.setValue(clamped);
+        }
+        if (sizeValueLabel != null) {
+            sizeValueLabel.setText(String.format("%d pixels", ballResizer.getCurrentRadius()));
+        }
+    }
+
+    public double getObstacleWidth() {
+        if (obstacleWidthSpinner != null) {
+            return ((Number) obstacleWidthSpinner.getValue()).doubleValue();
+        }
+        return Obstacle.DEFAULT_WIDTH;
+    }
+
+    public double getObstacleHeight() {
+        if (obstacleHeightSpinner != null) {
+            return ((Number) obstacleHeightSpinner.getValue()).doubleValue();
+        }
+        return Obstacle.DEFAULT_HEIGHT;
     }
 
 }

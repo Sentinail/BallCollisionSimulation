@@ -92,7 +92,18 @@ public class LogPanel extends JPanel implements BallEventListener {
             if (event.getEventType() == BallEvent.Type.GRAVITY_DIRECTION_CHANGED ||
                 event.getEventType() == BallEvent.Type.SPRING_CONSTANT_CHANGED ||
                 event.getEventType() == BallEvent.Type.GRAVITY_TOGGLED) {
-                message = "⚙️ " + message;
+                message = "[Physics] " + message;
+            }
+
+            if (event.getEventType() == BallEvent.Type.OBSTACLE_CREATED ||
+                event.getEventType() == BallEvent.Type.OBSTACLE_REMOVED ||
+                event.getEventType() == BallEvent.Type.OBSTACLE_MOVED ||
+                event.getEventType() == BallEvent.Type.OBSTACLES_CLEARED) {
+                message = "[Obstacle] " + message;
+            }
+
+            if (event.getEventType() == BallEvent.Type.BALL_OBSTACLE_COLLISION) {
+                message = "[Obstacle Collision] " + message;
             }
             
             addLogMessage(message);
