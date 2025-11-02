@@ -16,6 +16,8 @@ import java.awt.event.MouseMotionAdapter;
  */
 public class GamePanel extends JPanel {
     private GameState gameState;
+    private boolean gridVisible = true; // Grid visibility toggle
+    private boolean instructionsVisible = true; // Instructions visibility toggle
     
     public GamePanel(GameState gameState) {
         this.gameState = gameState;
@@ -87,24 +89,70 @@ public class GamePanel extends JPanel {
         });
     }
     
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        for (Obstacle obstacle : gameState.getObstacles()) {
-            obstacle.paint(g2d);
+    /**
+     * Set grid visibility
+     */
+    public void setGridVisible(boolean visible) {
+        this.gridVisible = visible;
+        repaint();
+    }
+    
+    /**
+     * Get grid visibility
+     */
+    public boolean isGridVisible() {
+        return gridVisible;
+    }
+    
+    /**
+     * Set instructions visibility
+     */
+    public void setInstructionsVisible(boolean visible) {
+        this.instructionsVisible = visible;
+        repaint();
+    }
+    
+    /**
+     * Get instructions visibility
+     */
+    public boolean isInstructionsVisible() {
+        return instructionsVisible;
+    }
+    
+    /**
+     * Draw a grid background for better visual reference
+     */
+    private void drawGrid(Graphics2D g2d) {
+        int gridSize = 25; // Grid cell size in pixels
+        int width = getWidth();
+        int height = getHeight();
+        
+        // Set grid color (light gray)
+        g2d.setColor(new Color(230, 230, 230));
+        g2d.setStroke(new BasicStroke(1));
+        
+        // Draw vertical lines
+        for (int x = gridSize; x < width; x += gridSize) {
+            g2d.drawLine(x, 0, x, height);
         }
         
-        // Paint all balls
-        for (Ball ball : gameState.getBalls()) {
-            ball.paint(g2d);
+        // Draw horizontal lines
+        for (int y = gridSize; y < height; y += gridSize) {
+            g2d.drawLine(0, y, width, y);
         }
         
-        // Paint instructions
+        // Reset stroke for other drawing operations
+        g2d.setStroke(new BasicStroke(1));
+    }
+    
+    /**
+     * Draw instruction text and game information
+     */
+    private void drawInstructions(Graphics2D g2d) {
         g2d.setColor(Color.GRAY);
         g2d.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        // Draw instruction lines
         g2d.drawString("Controls: A=Add Ball | C=Clear All | G=Toggle Gravity | 1-5=Add Multiple Balls", 10, 20);
         g2d.drawString("Mouse: Click & Drag to move balls | Double-click empty space to add ball", 10, 35);
         g2d.drawString(String.format("Balls: %d | Gravity: %s (%.1f, %.1f)", 
@@ -115,6 +163,32 @@ public class GamePanel extends JPanel {
         g2d.drawString(String.format("Obstacles: %d | Mode: %s (left-click add/move, right-click remove)",
             gameState.getObstacles().size(),
             gameState.isObstacleEditMode() ? "EDIT" : "VIEW"), 10, 65);
+    }
+    
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Draw grid background only if visible
+        if (gridVisible) {
+            drawGrid(g2d);
+        }
+
+        for (Obstacle obstacle : gameState.getObstacles()) {
+            obstacle.paint(g2d);
+        }
+        
+        // Paint all balls
+        for (Ball ball : gameState.getBalls()) {
+            ball.paint(g2d);
+        }
+        
+        // Paint instructions only if visible
+        if (instructionsVisible) {
+            drawInstructions(g2d);
+        }
         
         // Draw dragged ball connection line
         if (gameState.getDraggedBall() != null) {
