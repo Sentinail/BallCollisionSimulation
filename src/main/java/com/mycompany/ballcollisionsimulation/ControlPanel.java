@@ -7,6 +7,7 @@ package com.mycompany.ballcollisionsimulation;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import static javax.swing.ScrollPaneConstants.*;
 import java.awt.*;
 
 /**
@@ -24,6 +25,8 @@ public class ControlPanel extends JPanel {
     private JSpinner obstacleHeightSpinner;
     private JToggleButton obstacleModeToggle;
     private JLabel obstacleCountLabel;
+    private JSlider springConstantSlider;
+    private JLabel springConstantValueLabel;
     
     public ControlPanel(GameState gameState) {
         this.gameState = gameState;
@@ -41,8 +44,8 @@ public class ControlPanel extends JPanel {
     private void setupLayout() {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder("Control Panel"));
-        setPreferredSize(new Dimension(200, 0));
-        setMinimumSize(new Dimension(200, 400));
+        setPreferredSize(new Dimension(220, 0)); // Increased width to prevent scrollbar overlap
+        setMinimumSize(new Dimension(220, 400));
         setBackground(Color.LIGHT_GRAY);
     }
     
@@ -53,6 +56,7 @@ public class ControlPanel extends JPanel {
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBackground(Color.LIGHT_GRAY);
+        // Remove the problematic border - we'll handle spacing differently
         
         // Add spacing at top
         mainPanel.add(Box.createVerticalStrut(10));
@@ -77,7 +81,7 @@ public class ControlPanel extends JPanel {
                                    "Mars Gravity", "Jupiter Gravity", "Custom Gravity"};
         gravitySelector = new JComboBox<>(gravityOptions);
         gravitySelector.setFocusable(false);
-        gravitySelector.setMaximumSize(new Dimension(180, 30));
+        gravitySelector.setMaximumSize(new Dimension(160, 30)); // Reduced width to leave space for scrollbar
         
         gravitySelector.addActionListener(e -> {
             if (!gravitySelector.isPopupVisible()) {
@@ -94,7 +98,7 @@ public class ControlPanel extends JPanel {
         // Add separator
         mainPanel.add(Box.createVerticalStrut(10));
         JSeparator separator = new JSeparator();
-        separator.setMaximumSize(new Dimension(180, 2));
+        separator.setMaximumSize(new Dimension(160, 2)); // Reduced to match other components
         mainPanel.add(separator);
         mainPanel.add(Box.createVerticalStrut(10));
         
@@ -125,7 +129,7 @@ public class ControlPanel extends JPanel {
         sizePanel.add(Box.createVerticalStrut(15));
         
         // Slider
-        sizeSlider = new JSlider(JSlider.VERTICAL, 
+        sizeSlider = new JSlider(SwingConstants.VERTICAL, 
             ballResizer.getMinRadius(), 
             ballResizer.getMaxRadius(), 
             ballResizer.getCurrentRadius());
@@ -164,7 +168,7 @@ public class ControlPanel extends JPanel {
         // Add separator
         mainPanel.add(Box.createVerticalStrut(10));
         JSeparator obstacleSeparator = new JSeparator();
-        obstacleSeparator.setMaximumSize(new Dimension(180, 2));
+        obstacleSeparator.setMaximumSize(new Dimension(160, 2)); // Reduced width
         mainPanel.add(obstacleSeparator);
         mainPanel.add(Box.createVerticalStrut(10));
 
@@ -195,7 +199,7 @@ public class ControlPanel extends JPanel {
         obstaclePanel.add(widthLabel);
 
         obstacleWidthSpinner = new JSpinner(new SpinnerNumberModel((int) Obstacle.DEFAULT_WIDTH, 20, 600, 10));
-        obstacleWidthSpinner.setMaximumSize(new Dimension(140, 25));
+        obstacleWidthSpinner.setMaximumSize(new Dimension(120, 25)); // Reduced width
         obstaclePanel.add(obstacleWidthSpinner);
 
         obstaclePanel.add(Box.createVerticalStrut(10));
@@ -205,7 +209,7 @@ public class ControlPanel extends JPanel {
         obstaclePanel.add(heightLabel);
 
         obstacleHeightSpinner = new JSpinner(new SpinnerNumberModel((int) Obstacle.DEFAULT_HEIGHT, 20, 400, 10));
-        obstacleHeightSpinner.setMaximumSize(new Dimension(140, 25));
+        obstacleHeightSpinner.setMaximumSize(new Dimension(120, 25)); // Reduced width
         obstaclePanel.add(obstacleHeightSpinner);
 
         obstaclePanel.add(Box.createVerticalStrut(15));
@@ -234,6 +238,83 @@ public class ControlPanel extends JPanel {
 
         mainPanel.add(obstaclePanel);
 
+        // Add separator
+        mainPanel.add(Box.createVerticalStrut(10));
+        JSeparator springSeparator = new JSeparator();
+        springSeparator.setMaximumSize(new Dimension(160, 2)); // Reduced width
+        mainPanel.add(springSeparator);
+        mainPanel.add(Box.createVerticalStrut(10));
+
+        // ========== SPRING CONSTANT CONTROL SECTION ==========
+        JPanel springPanel = new JPanel();
+        springPanel.setLayout(new BoxLayout(springPanel, BoxLayout.Y_AXIS));
+        springPanel.setBackground(Color.LIGHT_GRAY);
+        springPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(10, 10, 10, 10),
+            BorderFactory.createTitledBorder("Drag Force")
+        ));
+
+        // Title label
+        JLabel springTitleLabel = new JLabel("Spring Constant");
+        springTitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        springTitleLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        springPanel.add(springTitleLabel);
+
+        springPanel.add(Box.createVerticalStrut(10));
+
+        // Spring constant value display
+        double currentSpringConstant = gameState.getSpringConstant();
+        springConstantValueLabel = new JLabel(String.format("%.0f N/m", currentSpringConstant));
+        springConstantValueLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        springConstantValueLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        springConstantValueLabel.setForeground(new Color(0, 100, 200));
+        springPanel.add(springConstantValueLabel);
+
+        springPanel.add(Box.createVerticalStrut(15));
+
+        // Spring constant slider (horizontal for space efficiency)
+        springConstantSlider = new JSlider(SwingConstants.HORIZONTAL, 10000, 100000, (int)currentSpringConstant);
+        springConstantSlider.setMajorTickSpacing(20000);
+        springConstantSlider.setMinorTickSpacing(10000);
+        springConstantSlider.setPaintTicks(true);
+        springConstantSlider.setPaintLabels(false); // We'll set custom labels
+        springConstantSlider.setBackground(Color.LIGHT_GRAY);
+        springConstantSlider.setAlignmentX(Component.CENTER_ALIGNMENT);
+        springConstantSlider.setMaximumSize(new Dimension(150, 60)); // Reduced width to prevent scrollbar overlap
+        
+        // Create custom abbreviated labels
+        @SuppressWarnings("UseOfObsoleteCollectionType")
+        java.util.Hashtable<Integer, JLabel> labelTable = new java.util.Hashtable<>();
+        labelTable.put(10000, new JLabel("10k"));
+        labelTable.put(30000, new JLabel("30k"));
+        labelTable.put(50000, new JLabel("50k"));
+        labelTable.put(70000, new JLabel("70k"));
+        labelTable.put(90000, new JLabel("90k"));
+        springConstantSlider.setLabelTable(labelTable);
+        springConstantSlider.setPaintLabels(true);
+
+        springConstantSlider.addChangeListener(e -> {
+            if (springConstantSlider.getValueIsAdjusting()) {
+                return;
+            }
+            double newValue = springConstantSlider.getValue();
+            gameState.setSpringConstant(newValue);
+            springConstantValueLabel.setText(String.format("%.0f N/m", newValue));
+        });
+
+        springPanel.add(springConstantSlider);
+
+        springPanel.add(Box.createVerticalStrut(10));
+
+        // Info text
+        JLabel springInfoLabel = new JLabel("<html><center><i>Controls ball dragging<br>stiffness</i></center></html>");
+        springInfoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        springInfoLabel.setFont(new Font("Arial", Font.ITALIC, 10));
+        springInfoLabel.setForeground(Color.DARK_GRAY);
+        springPanel.add(springInfoLabel);
+
+        mainPanel.add(springPanel);
+
         // Add info label at bottom
         mainPanel.add(Box.createVerticalGlue());
         
@@ -245,7 +326,19 @@ public class ControlPanel extends JPanel {
         
         mainPanel.add(Box.createVerticalStrut(20));
         
-        add(mainPanel, BorderLayout.CENTER);
+        // Create a wrapper panel with controlled width to prevent content overlap with scrollbar
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBackground(Color.LIGHT_GRAY);
+        wrapperPanel.add(mainPanel, BorderLayout.CENTER);
+        wrapperPanel.setPreferredSize(new Dimension(190, wrapperPanel.getPreferredSize().height));
+        
+        // Make the panel scrollable
+        JScrollPane scrollPane = new JScrollPane(wrapperPanel);
+        scrollPane.setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setBorder(null);
+        
+        add(scrollPane, BorderLayout.CENTER);
     }
     
     /**
@@ -342,6 +435,10 @@ public class ControlPanel extends JPanel {
                     gravitySelector.setSelectedIndex(previousIndex);
                 }   
                 break;
+            default:
+                // Handle unknown selection - restore previous
+                gravitySelector.setSelectedIndex(previousIndex);
+                break;
         }
     }
     
@@ -380,6 +477,19 @@ public class ControlPanel extends JPanel {
         }
         if (sizeValueLabel != null) {
             sizeValueLabel.setText(String.format("%d pixels", ballResizer.getCurrentRadius()));
+        }
+    }
+
+    /**
+     * Update the spring constant control to match a loaded simulation.
+     */
+    public void setCurrentSpringConstant(double springConstant) {
+        double clamped = Math.max(10000, Math.min(100000, springConstant));
+        if (springConstantSlider != null) {
+            springConstantSlider.setValue((int)clamped);
+        }
+        if (springConstantValueLabel != null) {
+            springConstantValueLabel.setText(String.format("%.0f N/m", clamped));
         }
     }
 
