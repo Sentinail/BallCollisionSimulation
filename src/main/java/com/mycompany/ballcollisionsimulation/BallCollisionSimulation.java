@@ -55,92 +55,11 @@ public class BallCollisionSimulation extends JFrame {
     }
     
     /**
-     * Set up the menu bar with File, View, Help, and About Us menus
+     * Set up the menu bar using MenuBarManager for modularity
      */
     private void setupMenuBar() {
-        JMenuBar menuBar = new JMenuBar();
-        
-        // File Menu
-        JMenu fileMenu = new JMenu("File");
-        fileMenu.setMnemonic('F');
-        
-        JMenuItem saveItem = new JMenuItem("Save Simulation...");
-        saveItem.setMnemonic('S');
-        saveItem.setAccelerator(KeyStroke.getKeyStroke("control S"));
-        saveItem.addActionListener(e -> saveSimulation());
-        
-        JMenuItem loadItem = new JMenuItem("Load Simulation...");
-        loadItem.setMnemonic('L');
-        loadItem.setAccelerator(KeyStroke.getKeyStroke("control O"));
-        loadItem.addActionListener(e -> loadSimulation());
-        
-        JMenuItem exitItem = new JMenuItem("Exit");
-        exitItem.setMnemonic('X');
-        exitItem.addActionListener(e -> System.exit(0));
-        
-        fileMenu.add(saveItem);
-        fileMenu.add(loadItem);
-        fileMenu.addSeparator();
-        fileMenu.add(exitItem);
-        
-        // View Menu
-        JMenu viewMenu = new JMenu("View");
-        viewMenu.setMnemonic('V');
-        
-        JCheckBoxMenuItem toggleLogItem = new JCheckBoxMenuItem("Show Log Panel", true);
-        JCheckBoxMenuItem toggleControlItem = new JCheckBoxMenuItem("Show Control Panel", true);
-        JCheckBoxMenuItem toggleGridItem = new JCheckBoxMenuItem("Show Grid", true);
-        JCheckBoxMenuItem toggleInstructionsItem = new JCheckBoxMenuItem("Show Instructions", true);
-        
-        toggleLogItem.addActionListener(e -> {
-            logPanel.setVisible(toggleLogItem.isSelected());
-            revalidate();
-        });
-        
-        toggleControlItem.addActionListener(e -> {
-            controlPanel.setVisible(toggleControlItem.isSelected());
-            revalidate();
-        });
-        
-        toggleGridItem.addActionListener(e -> gamePanel.setGridVisible(toggleGridItem.isSelected()));
-        
-        toggleInstructionsItem.addActionListener(e -> gamePanel.setInstructionsVisible(toggleInstructionsItem.isSelected()));
-        
-        viewMenu.add(toggleLogItem);
-        viewMenu.add(toggleControlItem);
-        viewMenu.addSeparator();
-        viewMenu.add(toggleGridItem);
-        viewMenu.add(toggleInstructionsItem);
-        
-        // Help Menu
-        JMenu helpMenu = new JMenu("Help");
-        helpMenu.setMnemonic('H');
-        
-        JMenuItem controlsItem = new JMenuItem("Keyboard & Mouse Controls");
-        controlsItem.addActionListener(e -> showHelpDialog());
-        helpMenu.add(controlsItem);
-        
-        JMenuItem physicsItem = new JMenuItem("About Physics Simulation");
-        physicsItem.addActionListener(e -> showPhysicsInfoDialog());
-        helpMenu.add(physicsItem);
-        
-        // About Us Menu
-        JMenu aboutMenu = new JMenu("About Us");
-        aboutMenu.setMnemonic('A');
-        
-        JMenuItem aboutItem = new JMenuItem("Development Team");
-        aboutItem.addActionListener(e -> showAboutDialog());
-        
-        aboutMenu.add(aboutItem);
-        
-        // Add menus to menu bar
-        menuBar.add(fileMenu);
-        menuBar.add(viewMenu);
-        menuBar.add(helpMenu);
-        menuBar.add(aboutMenu);
-        
-        // Set the menu bar
-        setJMenuBar(menuBar);
+        MenuBarManager menuManager = new MenuBarManager(this, gamePanel, logPanel, controlPanel);
+        setJMenuBar(menuManager.createMenuBar());
     }
     
     /**
@@ -229,7 +148,7 @@ public class BallCollisionSimulation extends JFrame {
     /**
      * Save the current simulation state to a file
      */
-    private void saveSimulation() {
+    public void saveSimulation() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Save Simulation");
         fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Simulation Files (*.sim)", "sim"));
@@ -291,7 +210,7 @@ public class BallCollisionSimulation extends JFrame {
     /**
      * Load a simulation state from a file
      */
-    private void loadSimulation() {
+    public void loadSimulation() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Load Simulation");
         fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Simulation Files (*.sim)", "sim"));
@@ -311,27 +230,35 @@ public class BallCollisionSimulation extends JFrame {
                 String line;
                 int ballsLoaded = 0;
                 int obstaclesLoaded = 0;
+                double loadedGravityX = 0;
+                double loadedGravityY = 0;
+                double loadedSpringConstant = 0;
+                int loadedBallRadius = 0;
+                boolean gravityEnabled = true;
                 
                 while ((line = reader.readLine()) != null) {
                     if (line.startsWith("GRAVITY_ENABLED:")) {
-                        boolean enabled = Boolean.parseBoolean(line.substring(16));
-                        if (enabled != gameState.isGravityEnabled()) {
+                        gravityEnabled = Boolean.parseBoolean(line.substring(16));
+                        if (gravityEnabled != gameState.isGravityEnabled()) {
                             gameState.toggleGravity();
                         }
                     } else if (line.startsWith("GRAVITY_X:")) {
-                        double gx = Double.parseDouble(line.substring(10));
+                        loadedGravityX = Double.parseDouble(line.substring(10));
                         double gy = gameState.getGravityY();
-                        gameState.setGravityDirection(gx, gy);
+                        gameState.setGravityDirection(loadedGravityX, gy);
                     } else if (line.startsWith("GRAVITY_Y:")) {
-                        double gy = Double.parseDouble(line.substring(10));
+                        loadedGravityY = Double.parseDouble(line.substring(10));
                         double gx = gameState.getGravityX();
-                        gameState.setGravityDirection(gx, gy);
+                        gameState.setGravityDirection(gx, loadedGravityY);
                     } else if (line.startsWith("SPRING_CONSTANT:")) {
                         String value = line.substring("SPRING_CONSTANT:".length()).trim();
                         try {
-                            double springConstant = Double.parseDouble(value);
-                            if (springConstant != gameState.getSpringConstant()) {
-                                gameState.setSpringConstant(springConstant);
+                            loadedSpringConstant = Double.parseDouble(value);
+                            if (loadedSpringConstant != gameState.getSpringConstant()) {
+                                gameState.setSpringConstant(loadedSpringConstant);
+                                if (controlPanel != null) {
+                                    controlPanel.setCurrentSpringConstant(loadedSpringConstant);
+                                }
                             }
                         } catch (NumberFormatException ignored) {
                             // Ignore malformed value to maintain backward compatibility
@@ -339,9 +266,9 @@ public class BallCollisionSimulation extends JFrame {
                     } else if (line.startsWith("NEW_BALL_RADIUS:")) {
                         String value = line.substring("NEW_BALL_RADIUS:".length()).trim();
                         try {
-                            int radius = Integer.parseInt(value);
+                            loadedBallRadius = Integer.parseInt(value);
                             if (controlPanel != null) {
-                                controlPanel.setCurrentRadius(radius);
+                                controlPanel.setCurrentRadius(loadedBallRadius);
                             }
                         } catch (NumberFormatException ignored) {
                             // Ignore malformed value for backward compatibility
@@ -380,9 +307,35 @@ public class BallCollisionSimulation extends JFrame {
                     }
                 }
                 
+                // Build detailed physics summary
+                StringBuilder physicsInfo = new StringBuilder();
+                physicsInfo.append("Simulation loaded successfully!%n%n");
+                physicsInfo.append("Content: %d balls, %d obstacles%n%n");
+                physicsInfo.append("Physics Parameters:%n");
+                
+                // Gravity information
+                physicsInfo.append("• Gravity: ").append(gravityEnabled ? "Enabled" : "Disabled");
+                if (gravityEnabled) {
+                    double magnitude = Math.sqrt(loadedGravityX * loadedGravityX + loadedGravityY * loadedGravityY);
+                    physicsInfo.append(" (Magnitude: ").append(String.format("%.2f", magnitude)).append(")");
+                }
+                physicsInfo.append("%n");
+                
+                // Spring constant information
+                if (loadedSpringConstant > 0) {
+                    String springValue = loadedSpringConstant >= 1000 
+                        ? String.format("%.0fk", loadedSpringConstant / 1000) 
+                        : String.format("%.0f", loadedSpringConstant);
+                    physicsInfo.append("• Spring Constant: ").append(springValue).append(" N/m%n");
+                }
+                
+                // Ball radius information
+                if (loadedBallRadius > 0) {
+                    physicsInfo.append("• New Ball Radius: ").append(loadedBallRadius).append(" px%n");
+                }
+                
                 JOptionPane.showMessageDialog(this,
-                    String.format("Simulation loaded successfully!\nBalls loaded: %d\nObstacles loaded: %d",
-                        ballsLoaded, obstaclesLoaded),
+                    String.format(physicsInfo.toString(), ballsLoaded, obstaclesLoaded),
                     "Load Complete",
                     JOptionPane.INFORMATION_MESSAGE);
                     
@@ -398,7 +351,7 @@ public class BallCollisionSimulation extends JFrame {
     /**
      * Show the help dialog with keyboard and mouse controls
      */
-    private void showHelpDialog() {
+    public void showHelpDialog() {
         String helpText =
                 "Keyboard Controls:\n" +
                 "  A - Add a ball\n" +
@@ -426,7 +379,7 @@ public class BallCollisionSimulation extends JFrame {
     /**
      * Show the physics information dialog
      */
-    private void showPhysicsInfoDialog() {
+    public void showPhysicsInfoDialog() {
         String physicsText =
                 "Physics Simulation Details:\n\n" +
                 "• Elastic collisions conserve energy and momentum\n" +
@@ -442,7 +395,7 @@ public class BallCollisionSimulation extends JFrame {
     /**
      * Show the About Us dialog with developer information
      */
-    private void showAboutDialog() {
+    public void showAboutDialog() {
         String aboutMessage = "Developers:\n\n" +
                 "Wilson G. Ponseca\n" +
                 "Bianca Mackenzie C. Liong\n" +
